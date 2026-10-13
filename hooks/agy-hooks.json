@@ -1,0 +1,24 @@
+{
+  "agent-trace-hub": {
+    "enabled": true,
+    "PostToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/arch/agent-trace-hub/hooks/fast-trace.sh agy post_tool",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "/home/arch/agent-trace-hub/hooks/fast-trace.sh agy stop",
+        "timeout": 5
+      }
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "agent-trace-hub": {
+      "command": "node",
+      "args": ["/home/arch/agent-trace-hub/server.js"],
+      "env": {
+        "AGENT_TRACE_FILE": "/tmp/agent-traces.jsonl",
+        "PORT": "4100"
+      }
+    }
+  }
+}

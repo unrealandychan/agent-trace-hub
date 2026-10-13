@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/arch/agent-trace-hub/hooks/fast-trace.sh claude post_tool",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/arch/agent-trace-hub/hooks/fast-trace.sh claude stop",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}

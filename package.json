@@ -1,0 +1,22 @@
+{
+  "name": "agent-trace-hub",
+  "version": "1.0.0",
+  "description": "Zero-overhead tracing, evaluation, and side-by-side comparison for AGY, Claude Code, Pi Agent, and Cursor",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "ai-agents",
+    "tracing",
+    "benchmarking",
+    "antigravity",
+    "claude-code",
+    "pi-agent",
+    "cursor",
+    "evaluation",
+    "telemetry"
+  ],
+  "author": "ec",
+  "license": "MIT"
+}

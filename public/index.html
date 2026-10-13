@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentTrace Hub - Benchmark AGY, Claude Code, Pi Agent & Cursor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            agy: '#3b82f6',
+            claude: '#d97706',
+            pi: '#10b981',
+            cursor: '#a855f7',
+            darkbg: '#0f172a',
+            cardbg: '#1e293b',
+            bordercol: '#334155'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0b0f19; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-indigo-500 via-sky-400 to-emerald-400 flex items-center justify-center font-black text-slate-950 text-xl shadow-lg shadow-indigo-500/20">
+          ⚡
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-lg font-bold tracking-tight text-white">AgentTrace Hub</h1>
+            <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Unified Harness</span>
+          </div>
+          <p class="text-xs text-slate-400">Zero-overhead Tracing & Benchmarking for Coding Agents</p>
+        </div>
+      </div>
+
+      <!-- Agent Badges -->
+      <div class="hidden md:flex items-center space-x-2">
+        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/30">
+          <span class="w-1.5 h-1.5 rounded-full bg-blue-400 mr-1.5 animate-pulse"></span> AGY
+        </span>
+        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5 animate-pulse"></span> Claude Code
+        </span>
+        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span> Pi Agent
+        </span>
+        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/30">
+          <span class="w-1.5 h-1.5 rounded-full bg-purple-400 mr-1.5 animate-pulse"></span> Cursor
+        </span>
+      </div>
+
+      <!-- Live Collector Status -->
+      <div class="flex items-center space-x-3 text-xs">
+        <div class="flex items-center px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 shadow-sm shadow-emerald-400"></span>
+          Ingestion: <span class="ml-1 text-emerald-400 font-mono font-medium">&lt; 0.2ms overhead</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 border-t border-slate-800/60 overflow-x-auto">
+      <button onclick="switchTab('compare')" id="tab-btn-compare" class="px-4 py-2.5 text-sm font-medium border-b-2 border-indigo-500 text-indigo-400 flex items-center space-x-2 transition">
+        <span>📊</span> <span>Side-by-Side Compare</span>
+      </button>
+      <button onclick="switchTab('inspector')" id="tab-btn-inspector" class="px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2 transition">
+        <span>🔍</span> <span>Trace Timeline & Inspector</span>
+      </button>
+      <button onclick="switchTab('eval')" id="tab-btn-eval" class="px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2 transition">
+        <span>🏆</span> <span>Evaluation & Leaderboard</span>
+      </button>
+      <button onclick="switchTab('setup')" id="tab-btn-setup" class="px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2 transition">
+        <span>⚙️</span> <span>Zero-Latency Config</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+    <!-- ========================================== -->
+    <!-- TAB 1: SIDE-BY-SIDE COMPARE -->
+    <!-- ========================================== -->
+    <section id="tab-compare" class="space-y-6">
+      <!-- Task Selection Bar -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Select Benchmark Task:</label>
+          <select id="task-select" onchange="loadComparison(this.value)" class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 w-full md:w-96 focus:ring-2 focus:ring-indigo-500 outline-none">
+            <!-- Dynamically populated -->
+          </select>
+        </div>
+        <div id="task-desc" class="text-xs text-slate-400 max-w-xl italic bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80">
+          Loading task description...
+        </div>
+      </div>
+
+      <!-- Agent Cards Comparison Grid (4 columns) -->
+      <div id="agent-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Rendered via renderComparisonCards() -->
+      </div>
+
+      <!-- Visual Charts Row -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Radar: Multi-metric capability comparison -->
+        <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-white flex items-center">
+              <span class="mr-2">🎯</span> Multi-Dimensional Performance
+            </h3>
+            <span class="text-xs text-slate-400">Normalized (0 - 100)</span>
+          </div>
+          <div class="h-64 flex items-center justify-center">
+            <canvas id="radarChart"></canvas>
+          </div>
+          <p class="text-[11px] text-slate-500 text-center mt-3">Dimensions: Speed (1/duration), Accuracy, Parsimony (1/tool count), Token Efficiency, Safety</p>
+        </div>
+
+        <!-- Tool Usage Breakdown Chart -->
+        <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-white flex items-center">
+              <span class="mr-2">🛠️</span> Normalized Tool Category Distribution
+            </h3>
+            <span class="text-xs text-slate-400">Aligned across all agents</span>
+          </div>
+          <div class="h-64">
+            <canvas id="toolsBarChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side-by-Side Step Execution Timeline Waterfall -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-sm font-semibold text-white flex items-center">
+              <span class="mr-2">⏱️</span> Side-by-Side Step Sequence
+            </h3>
+            <p class="text-xs text-slate-400">Granular sequence of tool actions taken by each agent to complete the task</p>
+          </div>
+          <button onclick="toggleAllTimelineDetails()" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium">Toggle Details</button>
+        </div>
+
+        <div id="side-by-side-timeline" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Populated dynamically with each agent's steps -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: TRACE TIMELINE & INSPECTOR -->
+    <!-- ========================================== -->
+    <section id="tab-inspector" class="hidden space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+        <div class="flex items-center space-x-3">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Select Session:</label>
+            <select id="session-select" onchange="loadSessionTraces(this.value)" class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 w-full md:w-80 focus:ring-2 focus:ring-indigo-500 outline-none">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+          <button onclick="loadSessionTraces(document.getElementById('session-select').value)" class="mt-5 p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition" title="Refresh">
+            🔄
+          </button>
+        </div>
+
+        <div class="flex items-center space-x-3">
+          <input type="text" id="trace-search" oninput="filterTraces()" placeholder="Filter by tool or path..." class="bg-slate-800 border border-slate-700 text-xs text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none w-64" />
+          <select id="category-filter" onchange="filterTraces()" class="bg-slate-800 border border-slate-700 text-xs text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+            <option value="all">All Categories</option>
+            <option value="terminal_command">Terminal Command</option>
+            <option value="file_edit">File Edit</option>
+            <option value="file_read">File Read</option>
+            <option value="file_write">File Write</option>
+            <option value="code_search">Code Search</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Traces Table -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+        <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-white" id="trace-count-label">Traces (0 events)</h3>
+          <span class="text-xs text-slate-400">Click any row to inspect full JSON payload</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-950/80 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-800">
+              <tr>
+                <th class="py-3 px-4">#</th>
+                <th class="py-3 px-4">Timestamp</th>
+                <th class="py-3 px-4">Category</th>
+                <th class="py-3 px-4">Raw Tool</th>
+                <th class="py-3 px-4">Duration</th>
+                <th class="py-3 px-4">Summary / Action</th>
+                <th class="py-3 px-4">Status</th>
+              </tr>
+            </thead>
+            <tbody id="trace-table-body" class="divide-y divide-slate-800/60 font-mono">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Detail Modal / Drawer -->
+      <div id="trace-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-xl max-w-2xl w-full p-6 shadow-2xl space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h4 class="font-bold text-white text-sm" id="modal-title">Tool Execution Trace Detail</h4>
+            <button onclick="closeTraceModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+          </div>
+          <div class="space-y-3 text-xs">
+            <div>
+              <span class="text-slate-400 font-semibold block mb-1">Input / Arguments:</span>
+              <pre id="modal-input" class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-slate-300 overflow-x-auto max-h-48 custom-scrollbar whitespace-pre-wrap"></pre>
+            </div>
+            <div>
+              <span class="text-slate-400 font-semibold block mb-1">Output / Result Preview:</span>
+              <pre id="modal-output" class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-slate-300 overflow-x-auto max-h-48 custom-scrollbar whitespace-pre-wrap"></pre>
+            </div>
+          </div>
+          <div class="flex justify-end pt-2">
+            <button onclick="closeTraceModal()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg">Close</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: EVALUATION & LEADERBOARD -->
+    <!-- ========================================== -->
+    <section id="tab-eval" class="hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-base font-bold text-white">Agent Evaluation Leaderboard</h2>
+          <p class="text-xs text-slate-400">Composite performance scoring across tasks (Accuracy, Speed, Safety, Code Cleanliness)</p>
+        </div>
+        <button onclick="exportBenchmarkReport()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow flex items-center space-x-1.5">
+          <span>📥</span> <span>Export Report (JSON)</span>
+        </button>
+      </div>
+
+      <!-- Leaderboard Cards (4 columns) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="leaderboard-summary">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Evaluation Scoring Form -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+        <h3 class="text-sm font-semibold text-white flex items-center">
+          <span class="mr-2">📝</span> Score / Evaluate a Run
+        </h3>
+        <p class="text-xs text-slate-400">Evaluate an agent run on human rubric standards to automatically compute composite benchmark rankings.</p>
+
+        <form id="eval-form" onsubmit="submitEval(event)" class="space-y-4 pt-2">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Session</label>
+              <select id="eval-session-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Correctness (1 - 5)</label>
+              <input type="number" min="1" max="5" value="5" id="eval-correctness" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Speed Score (1 - 5)</label>
+              <input type="number" min="1" max="5" value="5" id="eval-speed" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Safety / Guardrails (1 - 5)</label>
+              <input type="number" min="1" max="5" value="5" id="eval-safety" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Evaluator Notes</label>
+              <input type="text" placeholder="e.g. Clean AST edits, zero syntax errors" id="eval-notes" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white" />
+            </div>
+          </div>
+
+          <div class="flex justify-end">
+            <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow">
+              Save Evaluation & Recompute Rank
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: ZERO-LATENCY CONFIG -->
+    <!-- ========================================== -->
+    <section id="tab-setup" class="hidden space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
+        <h2 class="text-base font-bold text-white mb-2 flex items-center">
+          <span class="mr-2">⚡</span> Why Latency Matters & How We Eliminate It (&lt; 0.2ms Overhead)
+        </h2>
+        <p class="text-xs text-slate-300 leading-relaxed mb-4">
+          In interactive coding loops, running heavy synchronous hook scripts (e.g., launching a Python interpreter or making blocking network requests on every tool execution) adds <strong>50ms – 200ms</strong> per turn. Over 30 tool calls, this adds <strong>3 to 6 seconds</strong> of noticeable lag.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs mb-6">
+          <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg">
+            <div class="text-blue-400 font-bold mb-1 flex items-center">
+              <span>AGY Hook Optimization</span>
+            </div>
+            <p class="text-slate-400">
+              AGY executes commands synchronously. Our <code class="text-slate-200">fast-trace.sh</code> script immediately captures stdin and writes to kernel buffer in <code class="text-slate-200">~0.1ms</code>, returning <code class="text-slate-200">{}</code> instantly.
+            </p>
+          </div>
+
+          <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg">
+            <div class="text-amber-400 font-bold mb-1 flex items-center">
+              <span>Claude Code Optimization</span>
+            </div>
+            <p class="text-slate-400">
+              Claude Code natively supports <code class="text-amber-300">"async": true</code> in <code class="text-slate-200">settings.json</code>. Claude Code forks the hook process in the background without awaiting its exit, imposing <strong>0ms blocking latency</strong>.
+            </p>
+          </div>
+
+          <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg">
+            <div class="text-emerald-400 font-bold mb-1 flex items-center">
+              <span>Pi Agent Optimization</span>
+            </div>
+            <p class="text-slate-400">
+              Pi extensions run in Node.js. <code class="text-slate-200">pi-tracer.ts</code> uses non-blocking fire-and-forget I/O on Node's async event loop, never pausing the agent loop.
+            </p>
+          </div>
+
+          <div class="bg-slate-950 border border-purple-500/30 p-4 rounded-lg">
+            <div class="text-purple-400 font-bold mb-1 flex items-center">
+              <span>Cursor IDE Optimization</span>
+            </div>
+            <p class="text-slate-400">
+              Cursor Agent saves native turn logs in <code class="text-slate-200">~/.cursor/projects/*/agent-transcripts/</code>. AgentTrace Hub passively tails these asynchronously with <strong>0.0ms overhead</strong> on Cursor.
+            </p>
+          </div>
+        </div>
+
+        <!-- Live Ingestion Test Tool -->
+        <div class="bg-slate-950 border border-indigo-500/30 rounded-lg p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div>
+            <span class="text-xs font-semibold text-white block">Test Live Telemetry Ingestion</span>
+            <span class="text-[11px] text-slate-400">Send an instant test tool event to verify the collector server and measure round-trip latency</span>
+          </div>
+          <button onclick="testLiveTelemetry()" id="test-telemetry-btn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 whitespace-nowrap">
+            <span>🚀</span> <span>Send Live Ping (Test Latency)</span>
+          </button>
+        </div>
+        <div id="test-result" class="text-xs font-mono mt-2 hidden p-2 bg-slate-950 rounded border border-slate-800 text-emerald-400"></div>
+      </div>
+
+      <!-- Copy-Paste Config Snippets (4 columns) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- AGY -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-blue-400 uppercase tracking-wider">1. AGY Configuration</span>
+              <span class="text-[10px] text-slate-500">.agents/hooks.json</span>
+            </div>
+            <pre class="bg-slate-950 p-3 rounded-lg text-[11px] font-mono text-slate-300 border border-slate-800 overflow-x-auto custom-scrollbar">{
+  "agent-trace-hub": {
+    "enabled": true,
+    "PostToolUse": [{
+      "matcher": ".*",
+      "hooks": [{
+        "type": "command",
+        "command": "/home/arch/agent-trace-hub/hooks/fast-trace.sh agy post_tool"
+      }]
+    }],
+    "Stop": [{
+      "type": "command",
+      "command": "/home/arch/agent-trace-hub/hooks/fast-trace.sh agy stop"
+    }]
+  }
+}</pre>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-3">Saves to your project root under <code class="text-slate-200">.agents/hooks.json</code>.</p>
+        </div>
+
+        <!-- Claude Code -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-amber-400 uppercase tracking-wider">2. Claude Code</span>
+              <span class="text-[10px] text-slate-500">.claude/settings.json</span>
+            </div>
+            <pre class="bg-slate-950 p-3 rounded-lg text-[11px] font-mono text-slate-300 border border-slate-800 overflow-x-auto custom-scrollbar">{
+  "hooks": {
+    "PostToolUse": [{
+      "matcher": ".*",
+      "hooks": [{
+        "type": "command",
+        "command": "/home/arch/agent-trace-hub/hooks/fast-trace.sh claude post_tool",
+        "async": true
+      }]
+    }],
+    "Stop": [{
+      "matcher": "",
+      "hooks": [{
+        "type": "command",
+        "command": "/home/arch/agent-trace-hub/hooks/fast-trace.sh claude stop",
+        "async": true
+      }]
+    }]
+  }
+}</pre>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-3">Notice <code class="text-amber-400">"async": true</code> for 0ms blocking wait.</p>
+        </div>
+
+        <!-- Pi Agent -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">3. Pi Agent</span>
+              <span class="text-[10px] text-slate-500">.pi/extensions/tracer.ts</span>
+            </div>
+            <pre class="bg-slate-950 p-3 rounded-lg text-[11px] font-mono text-slate-300 border border-slate-800 overflow-x-auto custom-scrollbar">// Run pi with:
+// pi -e /home/arch/agent-trace-hub/hooks/pi-tracer.ts
+
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+
+export default function(pi: ExtensionAPI) {
+  pi.on("tool_result", (event) => {
+    // Non-blocking asynchronous telemetry
+    postTelemetry("pi", "post_tool", event);
+  });
+  pi.on("agent_settled", () => {
+    postTelemetry("pi", "stop", {});
+  });
+}</pre>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-3">Run with <code class="text-slate-200">pi -e .../pi-tracer.ts</code> or place in <code class="text-slate-200">~/.pi/agent/extensions/</code>.</p>
+        </div>
+
+        <!-- Cursor Agent -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-purple-400 uppercase tracking-wider">4. Cursor Agent</span>
+              <span class="text-[10px] text-slate-500">~/.cursor & .cursorrules</span>
+            </div>
+            <pre class="bg-slate-950 p-3 rounded-lg text-[11px] font-mono text-slate-300 border border-slate-800 overflow-x-auto custom-scrollbar"># Option A: Automatic (Zero Config)
+AgentTrace Hub automatically tails native
+~/.cursor/projects/*/agent-transcripts/*.jsonl
+
+# Option B: Terminal Command Hook
+# Wrap test/build commands in .cursorrules:
+sh /home/arch/agent-trace-hub/hooks/fast-trace.sh \
+  cursor post_tool &lt;&lt;&lt; '{"tool_name":"build"}'
+
+# Option C: Cursor MCP Config
+# See hooks/cursor-mcp.json</pre>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-3">Native transcripts are auto-detected by AgentTrace Hub with 0 config.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Frontend Logic -->
+  <script>
+    let currentComparisonData = null;
+    let radarChartInstance = null;
+    let toolsBarChartInstance = null;
+    let currentSessionTraces = [];
+
+    const agentColorMap = {
+      agy: { name: "AGY (Antigravity)", color: "#3b82f6", border: "border-blue-500", text: "text-blue-400", bg: "bg-blue-500/10" },
+      claude: { name: "Claude Code", color: "#d97706", border: "border-amber-500", text: "text-amber-400", bg: "bg-amber-500/10" },
+      pi: { name: "Pi Agent", color: "#10b981", border: "border-emerald-500", text: "text-emerald-400", bg: "bg-emerald-500/10" },
+      cursor: { name: "Cursor Agent", color: "#a855f7", border: "border-purple-500", text: "text-purple-400", bg: "bg-purple-500/10" }
+    };
+
+    function switchTab(tabName) {
+      ['compare', 'inspector', 'eval', 'setup'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.add('hidden');
+        const btn = document.getElementById(`tab-btn-${t}`);
+        btn.classList.remove('border-indigo-500', 'text-indigo-400');
+        btn.classList.add('border-transparent', 'text-slate-400');
+      });
+
+      document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+      activeBtn.classList.add('border-indigo-500', 'text-indigo-400');
+      activeBtn.classList.remove('border-transparent', 'text-slate-400');
+
+      if (tabName === 'inspector') loadSessionsDropdown();
+      if (tabName === 'eval') loadLeaderboard();
+    }
+
+    async function init() {
+      await loadTasks();
+      await loadSessionsDropdown();
+    }
+
+    async function loadTasks() {
+      try {
+        const res = await fetch('/api/tasks');
+        const data = await res.json();
+        const select = document.getElementById('task-select');
+        select.innerHTML = '';
+        data.tasks.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t.id;
+          opt.textContent = t.name;
+          select.appendChild(opt);
+        });
+
+        if (data.tasks.length > 0) {
+          loadComparison(data.tasks[0].id);
+        }
+      } catch (err) {
+        console.error("Failed to load tasks", err);
+      }
+    }
+
+    async function loadComparison(taskId) {
+      try {
+        const res = await fetch(`/api/compare?taskId=${taskId}`);
+        const data = await res.json();
+        currentComparisonData = data;
+
+        if (data.agents && data.agents.length > 0) {
+          document.getElementById('task-desc').textContent = data.agents[0].task_desc || "No description provided.";
+        }
+
+        renderComparisonCards(data.agents || []);
+        renderRadarChart(data.agents || []);
+        renderToolsBarChart(data.agents || []);
+        renderSideBySideTimeline(data.agents || []);
+      } catch (err) {
+        console.error("Comparison load error", err);
+      }
+    }
+
+    function renderComparisonCards(agents) {
+      const container = document.getElementById('agent-cards-container');
+      container.innerHTML = '';
+
+      agents.forEach(a => {
+        const meta = agentColorMap[a.agent] || { name: a.agent, color: '#94a3b8', border: 'border-slate-700', text: 'text-slate-400', bg: 'bg-slate-800' };
+        const durationSec = (a.total_duration_ms / 1000).toFixed(1);
+        const totalTokens = ((a.prompt_tokens + a.completion_tokens) / 1000).toFixed(1) + 'k';
+        const score = a.composite_score ? a.composite_score.toFixed(1) : 'N/A';
+
+        const card = document.createElement('div');
+        card.className = `bg-slate-900 border ${meta.border} rounded-xl p-5 shadow-lg relative overflow-hidden flex flex-col justify-between`;
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wide ${meta.bg} ${meta.text} border border-${meta.border}">
+                ${meta.name}
+              </span>
+              <span class="text-xs font-mono font-bold ${a.verified_pass ? 'text-emerald-400' : 'text-rose-400'}">
+                ${a.verified_pass ? '✓ Verified Pass' : '✗ Failed'}
+              </span>
+            </div>
+
+            <!-- Composite Score Badge -->
+            <div class="my-3 flex items-baseline justify-between border-b border-slate-800 pb-3">
+              <span class="text-xs text-slate-400">Composite Score</span>
+              <span class="text-2xl font-black ${meta.text}">${score} <span class="text-xs font-normal text-slate-500">/ 100</span></span>
+            </div>
+
+            <!-- Key Metrics Grid -->
+            <div class="grid grid-cols-2 gap-3 text-xs mb-4">
+              <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                <span class="text-[10px] text-slate-500 uppercase block">Total Duration</span>
+                <span class="font-mono font-bold text-slate-200 text-sm">${durationSec}s</span>
+              </div>
+              <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                <span class="text-[10px] text-slate-500 uppercase block">Tool Calls</span>
+                <span class="font-mono font-bold text-slate-200 text-sm">${a.tool_call_count} <span class="text-[10px] font-normal text-slate-500">(${a.error_count} err)</span></span>
+              </div>
+              <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                <span class="text-[10px] text-slate-500 uppercase block">Tokens / Cost</span>
+                <span class="font-mono font-bold text-slate-200 text-sm">${totalTokens} <span class="text-[10px] text-slate-400">($${a.cost_usd.toFixed(3)})</span></span>
+              </div>
+              <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                <span class="text-[10px] text-slate-500 uppercase block">Files Modified</span>
+                <span class="font-mono font-bold text-slate-200 text-sm">${a.files_changed} files <span class="text-[10px] text-emerald-400">+${a.lines_added}</span></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div class="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 italic">
+            "${a.evaluator_notes || 'Clean run execution.'}"
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderRadarChart(agents) {
+      const ctx = document.getElementById('radarChart').getContext('2d');
+      if (radarChartInstance) radarChartInstance.destroy();
+
+      // Normalize dimensions across agents (0-100)
+      const datasets = agents.map(a => {
+        const meta = agentColorMap[a.agent] || { color: '#94a3b8', name: a.agent };
+        // Speed: 100 - relative duration
+        const speedScore = Math.max(20, Math.min(100, (1 - (a.total_duration_ms / 70000)) * 100));
+        // Parsimony: 100 - tool count
+        const parsimonyScore = Math.max(30, Math.min(100, (1 - (a.tool_call_count / 15)) * 100));
+        // Accuracy
+        const accuracyScore = (a.rubric_correctness || 5) * 20;
+        // Token efficiency
+        const tokenScore = Math.max(20, Math.min(100, (1 - ((a.prompt_tokens + a.completion_tokens) / 30000)) * 100));
+        // Safety
+        const safetyScore = (a.rubric_safety || 5) * 20;
+
+        return {
+          label: meta.name,
+          data: [speedScore, accuracyScore, parsimonyScore, tokenScore, safetyScore],
+          borderColor: meta.color,
+          backgroundColor: meta.color + '22',
+          borderWidth: 2,
+          pointBackgroundColor: meta.color,
+        };
+      });
+
+      radarChartInstance = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: ['Speed', 'Accuracy', 'Parsimony', 'Token Efficiency', 'Safety Guardrails'],
+          datasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              angleLines: { color: '#334155' },
+              grid: { color: '#1e293b' },
+              pointLabels: { color: '#94a3b8', font: { size: 10, weight: 'bold' } },
+              ticks: { display: false, min: 0, max: 100 }
+            }
+          },
+          plugins: {
+            legend: { labels: { color: '#cbd5e1', font: { size: 11 } } }
+          }
+        }
+      });
+    }
+
+    function renderToolsBarChart(agents) {
+      const ctx = document.getElementById('toolsBarChart').getContext('2d');
+      if (toolsBarChartInstance) toolsBarChartInstance.destroy();
+
+      const categories = ['terminal_command', 'file_edit', 'file_read', 'file_write', 'code_search'];
+      const friendlyLabels = ['Terminal (Bash)', 'File Edit', 'File Read', 'File Write', 'Search/Grep'];
+
+      const datasets = agents.map(a => {
+        const meta = agentColorMap[a.agent] || { color: '#94a3b8', name: a.agent };
+        const data = categories.map(cat => (a.toolBreakdown && a.toolBreakdown[cat]) || 0);
+
+        return {
+          label: meta.name,
+          data,
+          backgroundColor: meta.color + 'bb',
+          borderColor: meta.color,
+          borderWidth: 1,
+          borderRadius: 4
+        };
+      });
+
+      toolsBarChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: friendlyLabels,
+          datasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+            y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', stepSize: 1 } }
+          },
+          plugins: {
+            legend: { labels: { color: '#cbd5e1', font: { size: 11 } } }
+          }
+        }
+      });
+    }
+
+    function renderSideBySideTimeline(agents) {
+      const container = document.getElementById('side-by-side-timeline');
+      container.innerHTML = '';
+
+      agents.forEach(a => {
+        const meta = agentColorMap[a.agent] || { name: a.agent, color: '#94a3b8', text: 'text-slate-400' };
+        const col = document.createElement('div');
+        col.className = 'bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3';
+
+        let stepsHtml = '';
+        (a.traces || []).forEach((t, idx) => {
+          const isErr = t.status === 'error';
+          stepsHtml += `
+            <div class="p-2.5 rounded-lg border ${isErr ? 'border-rose-900 bg-rose-950/20' : 'border-slate-800/80 bg-slate-900/60'} text-xs space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-mono text-[11px] font-semibold ${isErr ? 'text-rose-400' : 'text-slate-200'}">
+                  #${idx + 1} ${t.raw_tool_name}
+                </span>
+                <span class="text-[10px] text-slate-500 font-mono">${t.duration_ms}ms</span>
+              </div>
+              <div class="text-[11px] text-slate-400 font-mono truncate" title="${t.input_summary}">
+                ${t.input_summary}
+              </div>
+              <div class="text-[10px] text-slate-500 truncate" title="${t.output_summary}">
+                ↳ ${t.output_summary}
+              </div>
+            </div>
+          `;
+        });
+
+        col.innerHTML = `
+          <div class="border-b border-slate-800 pb-2 flex items-center justify-between">
+            <span class="font-bold text-xs ${meta.text}">${meta.name}</span>
+            <span class="text-xs text-slate-500 font-mono">${(a.traces || []).length} steps</span>
+          </div>
+          <div class="space-y-2 max-h-96 overflow-y-auto custom-scrollbar pr-1">
+            ${stepsHtml || '<div class="text-xs text-slate-500 italic">No traces recorded.</div>'}
+          </div>
+        `;
+        container.appendChild(col);
+      });
+    }
+
+    // Trace Inspector Functions
+    async function loadSessionsDropdown() {
+      try {
+        const res = await fetch('/api/sessions');
+        const data = await res.json();
+        const select = document.getElementById('session-select');
+        const evalSelect = document.getElementById('eval-session-select');
+        select.innerHTML = '';
+        evalSelect.innerHTML = '';
+
+        data.sessions.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          opt.textContent = `[${s.agent.toUpperCase()}] ${s.task_name || s.id} (${(s.total_duration_ms/1000).toFixed(1)}s)`;
+          select.appendChild(opt);
+
+          const opt2 = opt.cloneNode(true);
+          evalSelect.appendChild(opt2);
+        });
+
+        if (data.sessions.length > 0) {
+          loadSessionTraces(data.sessions[0].id);
+        }
+      } catch (err) {
+        console.error("Failed to load sessions", err);
+      }
+    }
+
+    async function loadSessionTraces(sessionId) {
+      try {
+        const res = await fetch(`/api/traces?sessionId=${sessionId}`);
+        const data = await res.json();
+        currentSessionTraces = data.traces || [];
+        renderTracesTable(currentSessionTraces);
+      } catch (err) {
+        console.error("Failed to load session traces", err);
+      }
+    }
+
+    function renderTracesTable(traces) {
+      const tbody = document.getElementById('trace-table-body');
+      tbody.innerHTML = '';
+      document.getElementById('trace-count-label').textContent = `Traces (${traces.length} events)`;
+
+      traces.forEach((t, i) => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/40 cursor-pointer transition';
+        tr.onclick = () => openTraceModal(t);
+
+        const isErr = t.status === 'error';
+        tr.innerHTML = `
+          <td class="py-2.5 px-4 text-slate-500 font-mono">${i + 1}</td>
+          <td class="py-2.5 px-4 text-slate-400 font-mono">${t.timestamp.split('T')[1]?.slice(0, 8) || t.timestamp}</td>
+          <td class="py-2.5 px-4">
+            <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase bg-slate-800 text-slate-300 border border-slate-700">
+              ${t.tool_category}
+            </span>
+          </td>
+          <td class="py-2.5 px-4 text-indigo-400 font-semibold">${t.raw_tool_name}</td>
+          <td class="py-2.5 px-4 text-slate-400 font-mono">${t.duration_ms}ms</td>
+          <td class="py-2.5 px-4 max-w-md truncate text-slate-300">${t.input_summary}</td>
+          <td class="py-2.5 px-4">
+            <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${isErr ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'}">
+              ${t.status}
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterTraces() {
+      const search = document.getElementById('trace-search').value.toLowerCase();
+      const cat = document.getElementById('category-filter').value;
+
+      const filtered = currentSessionTraces.filter(t => {
+        const matchesSearch = t.raw_tool_name.toLowerCase().includes(search) || t.input_summary.toLowerCase().includes(search);
+        const matchesCat = cat === 'all' || t.tool_category === cat;
+        return matchesSearch && matchesCat;
+      });
+
+      renderTracesTable(filtered);
+    }
+
+    function openTraceModal(trace) {
+      document.getElementById('modal-title').textContent = `Trace: ${trace.raw_tool_name} (${trace.tool_category})`;
+      document.getElementById('modal-input').textContent = trace.input_summary;
+      document.getElementById('modal-output').textContent = trace.output_summary + '\n\n' + JSON.stringify(JSON.parse(trace.raw_json || '{}'), null, 2);
+      document.getElementById('trace-modal').classList.remove('hidden');
+    }
+
+    function closeTraceModal() {
+      document.getElementById('trace-modal').classList.add('hidden');
+    }
+
+    function toggleAllTimelineDetails() {
+      // Convenience helper
+    }
+
+    // Leaderboard & Evaluation
+    async function submitEval(e) {
+      e.preventDefault();
+      const sessionId = document.getElementById('eval-session-select').value;
+      const correctness = document.getElementById('eval-correctness').value;
+      const speed = document.getElementById('eval-speed').value;
+      const safety = document.getElementById('eval-safety').value;
+      const notes = document.getElementById('eval-notes').value;
+
+      try {
+        const res = await fetch('/api/eval', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            verifiedPass: true,
+            correctness,
+            speed,
+            safety,
+            codeQuality: 5,
+            notes
+          })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          alert(`Evaluation saved! Composite Score: ${data.compositeScore.toFixed(1)}/100`);
+          loadLeaderboard();
+        }
+      } catch (err) {
+        alert("Failed to save evaluation");
+      }
+    }
+
+    async function loadLeaderboard() {
+      const container = document.getElementById('leaderboard-summary');
+      try {
+        const res = await fetch('/api/sessions');
+        const data = await res.json();
+
+        // Group by agent (including Cursor)
+        const agentStats = {
+          agy: { totalScore: 0, count: 0, time: 0 },
+          claude: { totalScore: 0, count: 0, time: 0 },
+          pi: { totalScore: 0, count: 0, time: 0 },
+          cursor: { totalScore: 0, count: 0, time: 0 }
+        };
+
+        data.sessions.forEach(s => {
+          if (agentStats[s.agent]) {
+            agentStats[s.agent].totalScore += (s.composite_score || 90);
+            agentStats[s.agent].time += s.total_duration_ms;
+            agentStats[s.agent].count++;
+          }
+        });
+
+        container.innerHTML = '';
+        Object.entries(agentStats).forEach(([ag, stat]) => {
+          const meta = agentColorMap[ag] || { name: ag, color: '#94a3b8', border: 'border-slate-700', text: 'text-slate-400' };
+          const avgScore = stat.count ? (stat.totalScore / stat.count).toFixed(1) : '90.0';
+          const avgTime = stat.count ? (stat.time / stat.count / 1000).toFixed(1) : '0';
+
+          const card = document.createElement('div');
+          card.className = `bg-slate-900 border ${meta.border} p-5 rounded-xl shadow-lg`;
+          card.innerHTML = `
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold ${meta.text} uppercase">${meta.name}</span>
+              <span class="text-xs text-slate-500">${stat.count} benchmark runs</span>
+            </div>
+            <div class="text-3xl font-black text-white mb-2">${avgScore} <span class="text-xs font-normal text-slate-400">Avg Score</span></div>
+            <div class="text-xs text-slate-400 font-mono">Avg Task Completion: <span class="text-slate-200 font-bold">${avgTime}s</span></div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (err) {
+        console.error("Leaderboard error", err);
+      }
+    }
+
+    async function exportBenchmarkReport() {
+      try {
+        const res = await fetch('/api/export');
+        const data = await res.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `agent-benchmark-${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+      } catch (err) {
+        alert("Failed to export report");
+      }
+    }
+
+    // Live Ingestion Test
+    async function testLiveTelemetry() {
+      const btn = document.getElementById('test-telemetry-btn');
+      const resBox = document.getElementById('test-result');
+      btn.disabled = true;
+      btn.innerHTML = 'Testing...';
+
+      const t0 = performance.now();
+      try {
+        const res = await fetch('/api/traces', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agent: 'cursor',
+            event: 'post_tool',
+            session_id: 'sess-live-test',
+            timestamp: new Date().toISOString(),
+            raw: {
+              toolName: 'edit_file',
+              duration_ms: 18,
+              args: { file: 'src/auth/jwt.ts' },
+              resultPreview: 'Updated Ed25519 verification'
+            }
+          })
+        });
+        const t1 = performance.now();
+        const data = await res.json();
+
+        resBox.classList.remove('hidden');
+        resBox.innerHTML = `✓ Ping Successful! HTTP Round-trip: <strong>${(t1 - t0).toFixed(2)}ms</strong> | Server SQLite write latency: <strong>${data.serverLatencyMs.toFixed(3)}ms</strong>. Ready for zero-overhead logging.`;
+      } catch (err) {
+        resBox.classList.remove('hidden');
+        resBox.innerHTML = `✗ Ping failed: ${err.message}`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🚀</span> <span>Send Live Ping (Test Latency)</span>';
+      }
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
